@@ -20,7 +20,7 @@ jobs:
           node-version: '22'
 
       - name: install dependencies
-        run: npm install @octokit/core node-fetch
+        run: npm install @octokit/core
 
       - name: Run Fetch scripts
         env:
