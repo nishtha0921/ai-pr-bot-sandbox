@@ -1,5 +1,5 @@
 const { Octokit } = require("@octokit/core");
-const fetch = require("node-fetch");
+// Node.js 18+ has built-in fetch, no need to import
 
 const reviewApiUrl = process.env.REVIEW_API_URL;
 
