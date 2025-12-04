@@ -1,4 +1,9 @@
 const { Octokit } = require("@octokit/core");
+const fetch = require("node-fetch");
+
+const reviewApiUrl = process.env.REVIEW_API_URL;
+
+console.log("Sending diff to review API:", reviewApiUrl);
 
 async function main() {
   const token = process.env.GITHUB_TOKEN;
@@ -63,6 +68,18 @@ async function main() {
 
   console.log("\n=== PR DIFF PREVIEW ===");
   console.log(preview);
+
+
+console.log("\n=== OLLAMA REVIEW API ===");
+  // 3) Send diff to review API
+  const reviewResp = await fetch(reviewApiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ diff: preview }),
+  });
+
+  const reviewData = await reviewResp.json();
+  console.log("Review API response:", reviewData);
 }
 
 main().catch(err => {

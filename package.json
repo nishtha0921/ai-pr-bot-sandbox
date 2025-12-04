@@ -1,0 +1,24 @@
+{
+  "name": "ai-pr-bot-sandbox",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/nishtha0921/ai-pr-bot-sandbox#readme",
+  "bugs": {
+    "url": "https://github.com/nishtha0921/ai-pr-bot-sandbox/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nishtha0921/ai-pr-bot-sandbox.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2"
+  }
+}

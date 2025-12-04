@@ -25,6 +25,7 @@ jobs:
       - name: Run Fetch scripts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVIEW_API_URL: ${{ secrets.REVIEW_API_URL }}
           PR_NUMBER: ${{ github.event.number }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
