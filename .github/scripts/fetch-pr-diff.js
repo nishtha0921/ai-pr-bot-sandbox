@@ -74,9 +74,28 @@ console.log("\n=== OLLAMA REVIEW API ===");
   // 3) Send diff to review API
   const reviewResp = await fetch(reviewApiUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Bypass-Tunnel-Reminder": "true"  // Try to bypass localtunnel warning page
+    },
     body: JSON.stringify({ diff: preview }),
   });
+
+  console.log("Review API status:", reviewResp.status);
+  
+  if (!reviewResp.ok) {
+    const text = await reviewResp.text();
+    console.error("Review API error response:", text.substring(0, 500));
+    throw new Error(`Review API returned status ${reviewResp.status}`);
+  }
+
+  const contentType = reviewResp.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await reviewResp.text();
+    console.error("Expected JSON but got:", contentType);
+    console.error("Response body:", text.substring(0, 500));
+    throw new Error("Review API did not return JSON");
+  }
 
   const reviewData = await reviewResp.json();
   console.log("Review API response:", reviewData);
