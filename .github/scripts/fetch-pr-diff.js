@@ -99,7 +99,31 @@ console.log("\n=== OLLAMA REVIEW API ===");
 
   const reviewData = await reviewResp.json();
   console.log("Review API response:", reviewData);
+
+
+// 4) Post comment to PR
+
+const body = `
+### 🤖 AI Code Review
+
+${reviewData}
+`.trim();
+
+console.log("\nPosting comment to PR:", prNumber);
+
+await octokit.request(
+  "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
+  {
+    owner,
+    repo,
+    issue_number: prNumber,
+    body,
+  }
+);
+
+console.log("Comment posted.");
 }
+
 
 main().catch(err => {
   console.error(err);
