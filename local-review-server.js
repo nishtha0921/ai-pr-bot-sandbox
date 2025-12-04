@@ -1,5 +1,5 @@
 const express = require("express");
-const fetch = require("node-fetch");
+// Node.js 18+ has built-in fetch, no need to import
 
 const app = express();
 app.use(express.json());
