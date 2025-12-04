@@ -106,7 +106,7 @@ console.log("\n=== OLLAMA REVIEW API ===");
 const body = `
 ### 🤖 AI Code Review
 
-${reviewData}
+${reviewData.review_markdown}
 `.trim();
 
 console.log("\nPosting comment to PR:", prNumber);
