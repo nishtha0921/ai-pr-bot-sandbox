@@ -70,9 +70,9 @@ const prContext = {
  // For now just log a truncated version so logs are manageable
  const maxChars = 4000;
  const preview =
-   diffText.length > maxChars
-     ? diffText.slice(0, maxChars) + "\n--- TRUNCATED ---"
-     : diffText;
+ pr.length > maxChars
+     ? pr.slice(0, maxChars) + "\n--- TRUNCATED ---"
+     : pr;
 
      console.log("\n=== PR DIFF PREVIEW ===");
      console.log(preview);
