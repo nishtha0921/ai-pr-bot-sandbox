@@ -21,31 +21,35 @@ app.post("/review", async (req, res) => {
   try {
     const { diff = "", pr, files, commits, existingComments } = req.body;
 
-    const prompt = `You are a code reviewer. Analyze this diff and return ONLY valid JSON with no other text.
+    const prompt = `You are a thorough code reviewer. Analyze this diff and provide feedback on code quality, style, potential improvements, and any issues.
 
-Rules:
-- Respond ONLY with JSON, no markdown, no explanations
-- Only comment on lines with issues (bugs, security, performance, code smells)
-- "line" must be the NEW line number (from lines starting with + in diff)
-- Maximum 10 comments
-- If no issues, return: {"comments": []}
+Review the following changes and suggest improvements. Comment on:
+- Code style and formatting
+- Potential bugs or edge cases
+- Performance improvements
+- Best practices
+- Documentation needs
 
 Pull Request: ${pr?.title || "N/A"}
 Files: ${(files || []).map(f => f.filename).join(", ")}
 
-Diff:
+Diff (first 3000 chars):
 ${diff.substring(0, 3000)}
 
-Return JSON only:
+IMPORTANT: Return ONLY valid JSON with no other text. For each comment, "line" must be the NEW line number from the diff (lines starting with +).
+
+Format:
 {
   "comments": [
     {
-      "path": "file.js",
+      "path": "exact/file/path.js",
       "line": 42,
-      "body": "Issue description"
+      "body": "Your specific feedback"
     }
   ]
-}`.trim();
+}
+
+If you have suggestions, return them in the JSON format above. Try to find at least 2-3 things to comment on.`.trim();
 
 const ollamaResp = await fetch(OLLAMA_URL, {
     method: "POST",
