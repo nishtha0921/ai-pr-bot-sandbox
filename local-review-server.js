@@ -19,24 +19,31 @@ app.get("/", (req, res) => {
 
 app.post("/review", async (req, res) => {
   try {
-    const diff = req.body.diff || "";
+    const { diff = "", pr, files, commits, existingComments } = req.body;
 
-    const prompt = `You are a senior software engineer doing a code review.
+    const prompt = `
+You are a senior engineer reviewing a GitHub pull request.
 
-Given this unified diff, respond in markdown with:
+Pull request:
+- Title: ${pr?.title || "N/A"}
+- Description: ${pr?.body || "N/A"}
+- Author: ${pr?.author || "N/A"}
+- Branches: ${pr?.head || "?"} -> ${pr?.base || "?"}
 
-Summary
-Briefly summarize the main changes.
+Changed files (summary):
+${(files || []).map(f => `- ${f.filename} (+${f.additions} -${f.deletions})`).join("\n")}
 
-Potential Issues
-List any possible bugs, risky changes, missing tests, or code smells.
+Recent commits:
+${(commits || []).slice(0, 5).map(c => `- ${c.sha.slice(0,7)}: ${c.message}`).join("\n")}
 
-Suggestions
-Suggest improvements in clarity, structure, tests, or performance.
+Existing review comments (if any) have been omitted or summarized; avoid repeating identical feedback.
 
-Diff:
+[then your JSON-structured instructions and finally:]
+
+Here is the unified diff:
 ${diff}
 `.trim();
+
 const ollamaResp = await fetch(OLLAMA_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

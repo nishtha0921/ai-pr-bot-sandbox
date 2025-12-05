@@ -57,17 +57,50 @@ async function main() {
     }
   );
 
-  const diffText = diffResp.data;
+const pr = prResp.data;
+const prContext = {
+  title: pr.title,
+  body: pr.body,
+  author: pr.user && pr.user.login,
+  base: pr.base && pr.base.ref,
+  head: pr.head && pr.head.ref,
+};
 
-  // For now just log a truncated version so logs are manageable
-  const maxChars = 4000;
-  const preview =
-    diffText.length > maxChars
-      ? diffText.slice(0, maxChars) + "\n--- TRUNCATED ---"
-      : diffText;
+  // B) PR commits
+const commitsResp = await octokit.request(
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/commits",
+  {
+    owner,
+    repo,
+    pull_number: prNumber,
+    per_page: 100,
+  }
+);
 
-  console.log("\n=== PR DIFF PREVIEW ===");
-  console.log(preview);
+const commits = commitsResp.data.map(c => ({
+  sha: c.sha,
+  message: c.commit && c.commit.message,
+  author: c.author && c.author.login,
+}));
+
+
+// C) Existing review comments (optional)
+const commentsResp = await octokit.request(
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments",
+  {
+    owner,
+    repo,
+    pull_number: prNumber,
+    per_page: 100,
+  }
+);
+
+const existingComments = commentsResp.data.map(c => ({
+  path: c.path,
+  line: c.line,
+  body: c.body,
+  author: c.user && c.user.login,
+}));
 
 
 console.log("\n=== OLLAMA REVIEW API ===");
@@ -78,7 +111,13 @@ console.log("\n=== OLLAMA REVIEW API ===");
       "Content-Type": "application/json",
       "Bypass-Tunnel-Reminder": "true"  // Try to bypass localtunnel warning page
     },
-    body: JSON.stringify({ diff: preview }),
+    body: JSON.stringify({
+      diff: preview,
+      pr: prContext,
+      files,
+      commits,
+      existingComments, // optional
+    }),
   });
 
   console.log("Review API status:", reviewResp.status);
