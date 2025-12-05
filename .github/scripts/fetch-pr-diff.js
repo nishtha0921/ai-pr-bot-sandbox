@@ -66,6 +66,16 @@ const prContext = {
   head: pr.head && pr.head.ref,
 };
 
+
+ // For now just log a truncated version so logs are manageable
+ const maxChars = 4000;
+ const preview =
+   diffText.length > maxChars
+     ? diffText.slice(0, maxChars) + "\n--- TRUNCATED ---"
+     : diffText;
+
+     console.log("\n=== PR DIFF PREVIEW ===");
+     console.log(preview);
   // B) PR commits
 const commitsResp = await octokit.request(
   "GET /repos/{owner}/{repo}/pulls/{pull_number}/commits",
