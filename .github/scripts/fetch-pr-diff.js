@@ -57,7 +57,7 @@ async function main() {
     }
   );
 
-const pr = prResp.data;
+const pr = diffResp.data;
 const prContext = {
   title: pr.title,
   body: pr.body,
