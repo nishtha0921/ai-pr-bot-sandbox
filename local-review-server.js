@@ -83,12 +83,18 @@ const ollamaResp = await fetch(OLLAMA_URL, {
   const data = await ollamaResp.json();
   const review = data.response || "";
 
+  console.log("\n=== OLLAMA RAW RESPONSE ===");
+  console.log(review.substring(0, 1000));
+
   let comments = [];
 try {
   const parsed = JSON.parse(review);
   comments = parsed.comments || [];
+  console.log(`\n=== PARSED ${comments.length} COMMENTS ===`);
+  console.log(JSON.stringify(comments, null, 2));
 } catch (err) {
   console.error("Failed to parse Ollama response as JSON:", err);
+  console.error("Response was:", review.substring(0, 500));
   comments = [];
 }
 
