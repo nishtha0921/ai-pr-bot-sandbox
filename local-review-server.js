@@ -21,43 +21,28 @@ app.post("/review", async (req, res) => {
   try {
     const { diff = "", pr, files, commits, existingComments } = req.body;
 
-    const prompt = `
-You are a senior engineer reviewing a GitHub pull request.
+    const prompt = `You are a code reviewer. Analyze this diff and return ONLY valid JSON with no other text.
 
-Pull request context:
-- Title: ${pr?.title || "N/A"}
-- Description: ${pr?.body || "N/A"}
-- Author: ${pr?.author || "N/A"}
-- Branches: ${pr?.head || "?"} -> ${pr?.base || "?"}
+Rules:
+- Respond ONLY with JSON, no markdown, no explanations
+- Only comment on lines with issues (bugs, security, performance, code smells)
+- "line" must be the NEW line number (from lines starting with + in diff)
+- Maximum 10 comments
+- If no issues, return: {"comments": []}
 
-Changed files (summary):
-${(files || []).map(f => `- ${f.filename} (+${f.additions} -${f.deletions})`).join("\n")}
+Pull Request: ${pr?.title || "N/A"}
+Files: ${(files || []).map(f => f.filename).join(", ")}
 
-Here is the unified diff:
-${diff}
+Diff:
+${diff.substring(0, 3000)}
 
-Your task: Analyze the diff and identify lines with potential issues, bugs, code smells, or improvements.
-
-Respond ONLY with valid JSON in this exact format:
+Return JSON only:
 {
   "comments": [
     {
-      "path": "path/to/file.js",
+      "path": "file.js",
       "line": 42,
-      "body": "Your specific feedback for this line"
-    }
-  ]
-}
-
-Your task: Analyze the diff and identify lines with potential issues, bugs, code smells, or improvements.
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "comments": [
-    {
-      "path": "path/to/file.js",
-      "line": 42,
-      "body": "Your specific feedback for this line"
+      "body": "Issue description"
     }
   ]
 }`.trim();
@@ -69,6 +54,7 @@ const ollamaResp = await fetch(OLLAMA_URL, {
       model: MODEL_NAME,
       prompt,
       stream: false,
+      format: "json",  // Tell Ollama to return JSON format
     }),
   });
 
