@@ -5,6 +5,56 @@ const reviewApiUrl = process.env.REVIEW_API_URL;
 
 console.log("Sending diff to review API:", reviewApiUrl);
 
+function parseDiffPositions(diffText) {
+  const filePositions = {};
+  const lines = diffText.split('\n');
+  
+  let currentFile = null;
+  let position = 0;
+  let newLineNumber = 0;
+  
+  for (const line of lines) {
+    // Check for file header: +++ b/path/to/file.js
+    if (line.startsWith('+++ b/')) {
+      currentFile = line.substring(6); // Remove '+++ b/'
+      filePositions[currentFile] = {};
+      position = 0;
+      continue;
+    }
+    
+    // Check for hunk header: @@ -10,5 +12,6 @@
+    if (line.startsWith('@@')) {
+      const match = line.match(/\+(\d+)/);
+      if (match) {
+        newLineNumber = parseInt(match[1], 10);
+      }
+      position++;
+      continue;
+    }
+    
+    // Skip if no current file
+    if (!currentFile) continue;
+    
+    // Track positions for added or context lines
+    if (line.startsWith('+')) {
+      // This is a new line in the file
+      filePositions[currentFile][newLineNumber] = position;
+      newLineNumber++;
+      position++;
+    } else if (line.startsWith('-')) {
+      // Deleted line, increment position but not line number
+      position++;
+    } else if (line.startsWith(' ')) {
+      // Context line
+      newLineNumber++;
+      position++;
+    }
+  }
+  
+  return filePositions;
+}
+
+
 async function main() {
   const token = process.env.GITHUB_TOKEN;
   const owner = process.env.REPO_OWNER;
@@ -57,7 +107,18 @@ async function main() {
     }
   );
 
-const pr = diffResp.data;
+const fullDiff = diffResp.data;
+
+const diffPositions = parseDiffPositions(fullDiff);
+console.log("\n=== Diff positions mapped for", Object.keys(diffPositions).length, "files");
+
+// Get PR metadata
+const prResp = await octokit.request(
+  "GET /repos/{owner}/{repo}/pulls/{pull_number}",
+  { owner, repo, pull_number: prNumber }
+);
+
+const pr = prResp.data;
 const prContext = {
   title: pr.title,
   body: pr.body,
@@ -122,7 +183,7 @@ console.log("\n=== OLLAMA REVIEW API ===");
       "Bypass-Tunnel-Reminder": "true"  // Try to bypass localtunnel warning page
     },
     body: JSON.stringify({
-      diff: preview,
+      diff: fullDiff,
       pr: prContext,
       files,
       commits,
@@ -147,30 +208,49 @@ console.log("\n=== OLLAMA REVIEW API ===");
   }
 
   const reviewData = await reviewResp.json();
-  console.log("Review API response:", reviewData);
+  console.log("Review API response:",  JSON.stringify(reviewData, null, 2));
 
+  // Map AI comments to GitHub review comments
+const reviewComments = [];
 
-// 4) Post comment to PR
+for (const comment of reviewData.comments || []) {
+  const { path, line, body } = comment;
+  
+  // Look up the diff position for this file and line
+  const position = diffPositions[path]?.[line];
+  
+  if (!position) {
+    console.warn(`Skipping comment for ${path}:${line} - position not found in diff`);
+    continue;
+  }
+  reviewComments.push({
+    path,
+    position,
+    body: body,
+  });
+}
+console.log(`\nPosting ${reviewComments.length} inline review comments`);
 
-const body = `
-### 🤖 AI Code Review
+if (reviewComments.length === 0) {
+  console.log("No comments to post.");
+  return;
+}
 
-${reviewData.review_markdown}
-`.trim();
-
-console.log("\nPosting comment to PR:", prNumber);
+// 4) Post review comments to PR
+console.log("\nPosting review to PR:", prNumber);
 
 await octokit.request(
-  "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
+  "POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews",
   {
     owner,
     repo,
-    issue_number: prNumber,
-    body,
+    pull_number: prNumber,
+    event: "COMMENT",
+    comments: reviewComments,
   }
 );
 
-console.log("Comment posted.");
+console.log("Review posted successfully!");
 }
 
 

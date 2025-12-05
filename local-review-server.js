@@ -24,7 +24,7 @@ app.post("/review", async (req, res) => {
     const prompt = `
 You are a senior engineer reviewing a GitHub pull request.
 
-Pull request:
+Pull request context:
 - Title: ${pr?.title || "N/A"}
 - Description: ${pr?.body || "N/A"}
 - Author: ${pr?.author || "N/A"}
@@ -33,16 +33,34 @@ Pull request:
 Changed files (summary):
 ${(files || []).map(f => `- ${f.filename} (+${f.additions} -${f.deletions})`).join("\n")}
 
-Recent commits:
-${(commits || []).slice(0, 5).map(c => `- ${c.sha.slice(0,7)}: ${c.message}`).join("\n")}
-
-Existing review comments (if any) have been omitted or summarized; avoid repeating identical feedback.
-
-[then your JSON-structured instructions and finally:]
-
 Here is the unified diff:
 ${diff}
-`.trim();
+
+Your task: Analyze the diff and identify lines with potential issues, bugs, code smells, or improvements.
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "comments": [
+    {
+      "path": "path/to/file.js",
+      "line": 42,
+      "body": "Your specific feedback for this line"
+    }
+  ]
+}
+
+Your task: Analyze the diff and identify lines with potential issues, bugs, code smells, or improvements.
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "comments": [
+    {
+      "path": "path/to/file.js",
+      "line": 42,
+      "body": "Your specific feedback for this line"
+    }
+  ]
+}`.trim();
 
 const ollamaResp = await fetch(OLLAMA_URL, {
     method: "POST",
@@ -65,7 +83,16 @@ const ollamaResp = await fetch(OLLAMA_URL, {
   const data = await ollamaResp.json();
   const review = data.response || "";
 
-  res.json({ review_markdown: review });
+  let comments = [];
+try {
+  const parsed = JSON.parse(review);
+  comments = parsed.comments || [];
+} catch (err) {
+  console.error("Failed to parse Ollama response as JSON:", err);
+  comments = [];
+}
+
+res.json({ comments });
 } catch (err) {
   console.error(err);
   res.status(500).json({ error: "Internal error" });
