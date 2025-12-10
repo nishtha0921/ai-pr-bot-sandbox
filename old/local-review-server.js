@@ -4,8 +4,8 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-const OLLAMA_URL = "http://localhost:11434/api/generate";
-const MODEL_NAME = "llama3"; // or any model you pulled with Ollama
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434/api/generate";
+const MODEL_NAME = process.env.OLLAMA_MODEL || "llama3.1";
 
 // Root route to verify server is running
 app.get("/", (req, res) => {
@@ -21,35 +21,37 @@ app.post("/review", async (req, res) => {
   try {
     const { diff = "", pr, files, commits, existingComments } = req.body;
 
-    const prompt = `You are a thorough code reviewer. Analyze this diff and provide feedback on code quality, style, potential improvements, and any issues.
+    const prompt = `You are a code reviewer. Analyze this git diff and provide feedback ONLY on changed lines.
 
-Review the following changes and suggest improvements. Comment on:
-- Code style and formatting
-- Potential bugs or edge cases
-- Performance improvements
-- Best practices
-- Documentation needs
+CRITICAL RULES:
+1. Look for lines starting with "+" in the diff - these are NEW/CHANGED lines
+2. The "line" number MUST be from the @@ hunk header (the number after the + sign)
+3. Only comment on lines that were actually changed (start with +)
+4. Return ONLY valid JSON, no other text
 
 Pull Request: ${pr?.title || "N/A"}
-Files: ${(files || []).map(f => f.filename).join(", ")}
 
-Diff (first 3000 chars):
-${diff.substring(0, 3000)}
+Diff to review:
+${diff.substring(0, 4000)}
 
-IMPORTANT: Return ONLY valid JSON with no other text. For each comment, "line" must be the NEW line number from the diff (lines starting with +).
+Example of reading line numbers from diff:
+@@ -10,5 +12,8 @@ means new code starts at line 12
++const x = 1;  <- this is line 12
++const y = 2;  <- this is line 13
++const z = 3;  <- this is line 14
 
-Format:
+Return JSON ONLY:
 {
   "comments": [
     {
-      "path": "exact/file/path.js",
-      "line": 42,
-      "body": "Your specific feedback"
+      "path": "src/file.js",
+      "line": 13,
+      "body": "Consider using const for y"
     }
   ]
 }
 
-If you have suggestions, return them in the JSON format above. Try to find at least 2-3 things to comment on.`.trim();
+Find 2-5 issues in the changed lines. If no issues, return empty array.`.trim();
 
 const ollamaResp = await fetch(OLLAMA_URL, {
     method: "POST",
