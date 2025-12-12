@@ -10,10 +10,36 @@ const logger = require('../utils/logger');
  */
 function parseJSON(response) {
   try {
+    // Try direct parse first
     const parsed = JSON.parse(response);
     return { success: true, data: parsed };
   } catch (error) {
+    // Try to extract JSON from markdown code blocks
+    const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+        logger.info('Extracted JSON from markdown code block');
+        return { success: true, data: parsed };
+      } catch (e) {
+        // Continue to fail
+      }
+    }
+    
+    // Try to find JSON object in the response
+    const objectMatch = response.match(/\{[\s\S]*"comments"[\s\S]*\}/);
+    if (objectMatch) {
+      try {
+        const parsed = JSON.parse(objectMatch[0]);
+        logger.info('Extracted JSON object from response');
+        return { success: true, data: parsed };
+      } catch (e) {
+        // Continue to fail
+      }
+    }
+    
     logger.warn('Failed to parse JSON response');
+    logger.debug('Response preview:', response.substring(0, 200));
     return { success: false, error: error.message };
   }
 }

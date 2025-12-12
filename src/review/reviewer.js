@@ -7,6 +7,7 @@ const GitHubClient = require('../github/client');
 const PRFetcher = require('../github/pr-fetcher');
 const ReviewPoster = require('../github/review-poster');
 const OllamaProvider = require('../ai/providers/ollama');
+const { mapCommentsToLines } = require('../diff/line-mapper');
 const { parseDiffPositions, mapCommentsToPositions } = require('../diff/position-mapper');
 const commentBuilder = require('./comment-builder');
 const logger = require('../utils/logger');
@@ -59,13 +60,8 @@ class Reviewer {
       logger.info('Step 1: Fetching PR data from GitHub');
       const prData = await this.prFetcher.fetchAllData(owner, repo, prNumber);
       
-      // Step 2: Parse diff positions
-      logger.info('Step 2: Parsing diff positions');
-      const diffPositions = parseDiffPositions(prData.diff);
-      logger.debug(`Mapped positions for ${Object.keys(diffPositions).length} files`);
-      
-      // Step 3: Send to AI for review
-      logger.info('Step 3: Sending diff to AI for review');
+      // Step 2: Send to AI for review
+      logger.info('Step 2: Sending diff to AI for review');
       const context = {
         pr: prData.details,
         files: prData.files,
@@ -76,12 +72,22 @@ class Reviewer {
       const reviewResult = await this.aiProvider.review(prData.diff, context);
       logger.success(`AI returned ${reviewResult.comments.length} comments`);
       
-      // Step 4: Map comments to positions
-      logger.info('Step 4: Mapping comments to diff positions');
-      const reviewComments = mapCommentsToPositions(reviewResult.comments, diffPositions);
+      // Step 3: Map comments using line-based API (simpler & more reliable)
+      logger.info('Step 3: Mapping comments to line numbers');
       
-      // Step 5: Post review to GitHub
-      logger.info('Step 5: Posting review to GitHub');
+      // Get the latest commit SHA
+      const commitId = prData.commits && prData.commits.length > 0 
+        ? prData.commits[prData.commits.length - 1].sha 
+        : null;
+      
+      const reviewComments = mapCommentsToLines(
+        reviewResult.comments,
+        prData.files,
+        commitId
+      );
+      
+      // Step 4: Post review to GitHub
+      logger.info('Step 4: Posting review to GitHub');
       if (reviewComments.length > 0) {
         await this.reviewPoster.postInlineComments(owner, repo, prNumber, reviewComments);
         logger.success(`Posted ${reviewComments.length} inline comments`);

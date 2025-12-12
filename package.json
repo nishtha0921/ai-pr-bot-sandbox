@@ -18,10 +18,14 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "start": "node scripts/start-server.js",
-    "review": "node scripts/review-pr.js"
+    "review": "node scripts/review-pr.js",
+    "review:rag": "node scripts/review-pr-rag.js",
+    "index:repo": "node scripts/index-repo.js"
   },
   "dependencies": {
     "@octokit/core": "^7.0.6",
+    "chromadb": "^1.8.1",
+    "chromadb-default-embed": "^2.14.0",
     "express": "^5.2.1",
     "node-fetch": "^3.3.2"
   },
