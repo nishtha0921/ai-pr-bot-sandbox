@@ -257,8 +257,11 @@ class RAGReviewer extends Reviewer {
             logger.debug(`✓ Fetched ${file}`);
           }
         } catch (error) {
-          // File doesn't exist, skip silently
-          logger.debug(`✗ Skipped ${file} (not found)`);
+          // File doesn't exist, skip silently (this is expected)
+          if (error.status !== 404) {
+            logger.debug(`✗ Error fetching ${file}:`, error.message);
+          }
+          // Don't log 404s - they're normal for optional files
         }
       }
 

@@ -30,12 +30,17 @@ class GitHubClient {
         return response;
       } catch (error) {
         lastError = error;
-        logger.warn(`GitHub API request failed (attempt ${attempt}/${this.maxRetries}): ${error.message}`);
-
+        
         // Don't retry on 404 or 403
         if (error.status === 404 || error.status === 403) {
+          // Don't log warnings for 404 - they're expected when checking for optional files
+          if (error.status !== 404) {
+            logger.warn(`GitHub API request failed (attempt ${attempt}/${this.maxRetries}): ${error.message}`);
+          }
           break;
         }
+        
+        logger.warn(`GitHub API request failed (attempt ${attempt}/${this.maxRetries}): ${error.message}`);
 
         // Wait before retrying
         if (attempt < this.maxRetries) {
