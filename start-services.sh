@@ -60,7 +60,7 @@ if kill -0 $SERVER_PID 2>/dev/null; then
   echo "View logs: tail -f logs/server.log"
   echo ""
   echo "To review a PR:"
-  echo "  ./review-pr.sh owner/repo PR_NUMBER"
+  echo "  npm run review owner/repo PR_NUMBER"
   echo ""
   echo "To stop services:"
   echo "  ./stop-services.sh"
