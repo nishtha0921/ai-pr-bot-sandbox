@@ -95,3 +95,5 @@ echo ""
 echo -e "${GREEN}✓ RAG setup complete! Happy reviewing! 🚀${NC}"
 echo ""
 
+
+
