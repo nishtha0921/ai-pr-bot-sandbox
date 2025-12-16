@@ -136,36 +136,9 @@ function getChangedLineRanges(patch) {
   return ranges;
 }
 
-/**
- * Hybrid approach: Try line-based first, fall back to position-based
- * 
- * @param {Array} comments - AI comments
- * @param {Array} files - PR files with patches
- * @param {Object} diffPositions - Position map (fallback)
- * @param {string} commitId - Commit SHA
- * @returns {Array} - Review comments
- */
-function mapCommentsHybrid(comments, files, diffPositions, commitId) {
-  const reviewComments = [];
-  
-  // Try line-based approach first
-  const lineBasedComments = mapCommentsToLines(comments, files, commitId);
-  
-  if (lineBasedComments.length > 0) {
-    logger.info(`Using line-based approach: ${lineBasedComments.length} comments`);
-    return lineBasedComments;
-  }
-  
-  // Fall back to position-based approach
-  logger.warn('Line-based approach failed, falling back to position-based');
-  const { mapCommentsToPositions } = require('./position-mapper');
-  return mapCommentsToPositions(comments, diffPositions);
-}
-
 module.exports = {
   mapCommentsToLines,
   isLineInDiff,
-  getChangedLineRanges,
-  mapCommentsHybrid
+  getChangedLineRanges
 };
 

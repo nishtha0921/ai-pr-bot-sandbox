@@ -29,17 +29,22 @@ function setupRoutes(app) {
    */
   app.post('/review', async (req, res) => {
     try {
-      const { diff, pr, files, commits, comments } = req.body;
+      const { diff, pr, files, commits, comments, useRAG = true } = req.body;
 
       if (!diff) {
         return res.status(400).json({ error: 'Diff is required' });
       }
 
       logger.info('Received review request');
-      logger.debug('PR context', { pr, filesCount: files?.length });
+      logger.debug('PR context', { pr, filesCount: files?.length, useRAG });
 
-      // Initialize reviewer
-      const reviewer = new Reviewer();
+      // Initialize reviewer with RAG support
+      const reviewer = new Reviewer({ useRAG });
+      
+      // Initialize RAG system if enabled
+      if (useRAG) {
+        await reviewer.initialize();
+      }
 
       // Build context
       const context = {
@@ -58,6 +63,7 @@ function setupRoutes(app) {
       res.json({
         comments: reviewResult.comments,
         provider: reviewer.aiProvider.getName(),
+        ragEnabled: useRAG,
       });
     } catch (error) {
       logger.error('Review request failed', error);
@@ -74,13 +80,18 @@ function setupRoutes(app) {
   app.get('/health', async (req, res) => {
     try {
       const reviewer = new Reviewer();
+      await reviewer.initialize();
       const aiAvailable = await reviewer.checkAIProvider();
+      const ragStats = await reviewer.getRAGStats();
 
       res.json({
         status: 'ok',
         ai: {
           provider: reviewer.aiProvider.getName(),
           available: aiAvailable,
+        },
+        rag: {
+          documentCount: ragStats.documentCount,
         },
       });
     } catch (error) {

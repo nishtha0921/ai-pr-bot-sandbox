@@ -19,7 +19,6 @@
     "test:watch": "jest --watch",
     "start": "node scripts/start-server.js",
     "review": "node scripts/review-pr.js",
-    "review:rag": "node scripts/review-pr-rag.js",
     "index:repo": "node scripts/index-repo.js"
   },
   "dependencies": {
