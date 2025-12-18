@@ -1,0 +1,34 @@
+{
+  "name": "ai-pr-bot-sandbox",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/nishtha0921/ai-pr-bot-sandbox#readme",
+  "bugs": {
+    "url": "https://github.com/nishtha0921/ai-pr-bot-sandbox/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nishtha0921/ai-pr-bot-sandbox.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "start": "node scripts/start-server.js",
+    "review": "node scripts/review-pr.js",
+    "index:repo": "node scripts/index-repo.js"
+  },
+  "dependencies": {
+    "@octokit/core": "^7.0.6",
+    "chromadb": "^1.8.1",
+    "chromadb-default-embed": "^2.14.0",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
