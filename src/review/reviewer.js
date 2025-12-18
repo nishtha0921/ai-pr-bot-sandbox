@@ -10,7 +10,6 @@ const OllamaProvider = require('../ai/providers/ollama');
 const VectorStore = require('../rag/vector-store');
 const RAGRetriever = require('../rag/retriever');
 const DocumentIndexer = require('../rag/indexer');
-const { mapCommentsToLines } = require('../diff/line-mapper');
 const logger = require('../utils/logger');
 const config = require('../utils/config');
 const { ReviewError } = require('../utils/errors');
@@ -110,35 +109,30 @@ class Reviewer {
       const reviewResult = await this.aiProvider.review(prData.diff, context);
       logger.success(`AI returned ${reviewResult.comments.length} comments`);
       
-      // Step 5: Map comments using line-based API
-      logger.info('Step 3: Mapping comments to line numbers');
+      // Step 5: Format comments for GitHub API
+      logger.info('Step 3: Formatting comments for GitHub');
+      const reviewComments = reviewResult.comments.map(comment => ({
+        path: comment.path,
+        line: comment.line,
+        side: 'RIGHT',  // RIGHT = new file (after changes)
+        body: comment.body
+      }));
       
-      const commitId = prData.commits && prData.commits.length > 0 
-        ? prData.commits[prData.commits.length - 1].sha 
-        : null;
-      
-      const reviewComments = mapCommentsToLines(
-        reviewResult.comments,
-        prData.files,
-        commitId
-      );
-      
-      logger.info(`Mapped ${reviewComments.length}/${reviewResult.comments.length} comments to line numbers`);
-      
-      // Step 6: Post review to GitHub
+      // Step 6: Post review to GitHub (with automatic validation and fallback)
       logger.info('Step 4: Posting review to GitHub');
       if (reviewComments.length > 0) {
-        await this.reviewPoster.postInlineComments(owner, repo, prNumber, reviewComments);
-        logger.success(`Posted ${reviewComments.length} inline comments`);
+        const result = await this.reviewPoster.postInlineComments(owner, repo, prNumber, reviewComments);
+        logger.success(`Posted ${result.posted} inline comments (${result.skipped} skipped)`);
       } else {
-        logger.warn('No valid comments to post');
+        logger.warn('No comments to post');
       }
       
       logger.section('Review completed successfully! ✅');
       
       return {
         success: true,
-        commentsPosted: reviewComments.length,
+        commentsPosted: result.posted,
+        commentsSkipped: result.skipped,
         filesReviewed: prData.files.length,
         ragEnabled: this.options.useRAG !== false
       };

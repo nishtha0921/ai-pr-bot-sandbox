@@ -40,3 +40,5 @@ echo "Note: Ollama and ngrok are left running (stop manually if needed)"
 
 
 
+
+
